@@ -1,11 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
+  output: 'export',
+  trailingSlash: true,
   images: {
-    domains: ['logo.clearbit.com'],
+    unoptimized: true
   },
+  basePath: '/trade-risk',
+  assetPrefix: '/trade-risk/',
 }
 
 module.exports = nextConfig 
