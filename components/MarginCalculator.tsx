@@ -22,6 +22,16 @@ const formatNumber = (num: number) => {
   return new Intl.NumberFormat('en-US').format(num);
 };
 
+const formatROI = (roi: number) => {
+  if (!isFinite(roi) || isNaN(roi)) {
+    return '∞'; // Use infinity symbol instead of "Infinity%"
+  }
+  if (Math.abs(roi) > 9999) {
+    return roi > 0 ? '∞' : '-∞';
+  }
+  return roi.toFixed(2);
+};
+
 interface TooltipProps {
   children: React.ReactNode;
   content: string;
@@ -136,13 +146,13 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
     const exitScenario = {
       grossProfit: (exitPrice - entryPrice) * shares,
       netProfit: (exitPrice - entryPrice) * shares - totalInterest,
-      roi: ((exitPrice - entryPrice) * shares - totalInterest) / actualOwnCash * 100
+      roi: actualOwnCash > 0 ? ((exitPrice - entryPrice) * shares - totalInterest) / actualOwnCash * 100 : 0
     };
 
     const stopLossScenario = {
       grossLoss: (stopLoss - entryPrice) * shares,
       netLoss: (stopLoss - entryPrice) * shares - totalInterest,
-      roi: ((stopLoss - entryPrice) * shares - totalInterest) / actualOwnCash * 100
+      roi: actualOwnCash > 0 ? ((stopLoss - entryPrice) * shares - totalInterest) / actualOwnCash * 100 : 0
     };
 
     const marginCallPrice = (actualMarginUsed * 1.25) / shares;
@@ -199,8 +209,10 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
     prefix = '', 
     suffix = '',
     tooltip,
-    min,
-    max
+    min = 0,
+    max,
+    showSlider = false,
+    sliderStep = 1
   }: {
     label: string;
     value: number;
@@ -212,6 +224,8 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
     tooltip?: string;
     min?: number;
     max?: number;
+    showSlider?: boolean;
+    sliderStep?: number;
   }) => {
     const [inputValue, setInputValue] = useState<string>(value.toString());
     const [isFocused, setIsFocused] = useState<boolean>(false);
@@ -247,6 +261,12 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
       debouncedOnChange(newValue);
     };
 
+    const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const numValue = parseFloat(e.target.value);
+      onChange(numValue);
+      setInputValue(numValue.toString());
+    };
+
     const handleFocus = () => {
       setIsFocused(true);
     };
@@ -259,32 +279,89 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
       
       // Immediate update on blur
       if (inputValue === '') {
-        onChange(0);
-        setInputValue('0');
+        onChange(min || 0);
+        setInputValue((min || 0).toString());
       } else {
         const numValue = parseFloat(inputValue);
         if (!isNaN(numValue)) {
-          onChange(numValue);
-          setInputValue(numValue.toString());
+          const clampedValue = Math.max(min || 0, max ? Math.min(max, numValue) : numValue);
+          onChange(clampedValue);
+          setInputValue(clampedValue.toString());
         } else {
           setInputValue(value.toString());
         }
       }
     };
 
+    const getSliderMax = () => {
+      if (max) return max;
+      
+      // More realistic price ranges based on typical trading scenarios
+      if (label.includes('Entry Price')) {
+        return stockPrice * 1.3; // Entry within 30% above current price
+      }
+      if (label.includes('Target Price')) {
+        return Math.max(stockPrice * 1.5, entryPrice * 1.5); // Target up to 50% gain
+      }
+      if (label.includes('Stop Loss')) {
+        return Math.max(stockPrice * 1.1, entryPrice * 1.05); // Stop loss slightly above entry
+      }
+      if (label.includes('Investment')) return 100000; // For investment, max at $100k
+      if (label.includes('Duration')) return 365; // For duration, max at 365 days
+      return value * 2 || 1000; // Default fallback
+    };
+
+    const getSliderMin = () => {
+      if (min !== undefined) return min;
+      
+      // More realistic minimum ranges for trading
+      if (label.includes('Entry Price')) {
+        return stockPrice * 0.7; // Entry within 30% below current price
+      }
+      if (label.includes('Target Price')) {
+        return Math.max(stockPrice * 1.02, entryPrice * 1.02); // Target at least 2% gain
+      }
+      if (label.includes('Stop Loss')) {
+        return Math.max(stockPrice * 0.7, entryPrice * 0.8); // Stop loss 20-30% below
+      }
+      return 0;
+    };
+
+    const getSliderStep = () => {
+      // Much smaller steps for smooth slider movement
+      if (label.includes('Price')) {
+        const range = getSliderMax() - getSliderMin();
+        return Math.max(0.01, range / 1000); // 1000 steps across the range
+      }
+      if (label.includes('Investment')) {
+        const range = getSliderMax() - getSliderMin();
+        return Math.max(10, range / 500); // 500 steps for investment
+      }
+      if (label.includes('Duration')) return 1; // Duration in day increments
+      return sliderStep;
+    };
+
     return (
-      <div className="space-y-2">
-        <div className="flex items-center space-x-2">
-          <label className="text-sm font-semibold text-gray-700">{label}</label>
-          {tooltip && (
-            <Tooltip content={tooltip}>
-              <Info className="w-4 h-4 text-gray-400 cursor-help" />
-            </Tooltip>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <label className="text-sm font-semibold text-gray-700">{label}</label>
+            {tooltip && (
+              <Tooltip content={tooltip}>
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+              </Tooltip>
+            )}
+          </div>
+          {showSlider && (
+            <div className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full border border-blue-200">
+              {prefix}{formatNumber(value)}{suffix}
+            </div>
           )}
         </div>
+        
         <div className="relative">
           {prefix && (
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium z-10">
               {prefix}
             </span>
           )}
@@ -296,69 +373,127 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
             onChange={handleChange}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            className={`${styles.inputField} w-full py-3 px-4 ${prefix ? 'pl-8' : ''} ${suffix ? 'pr-8' : ''} border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 text-sm font-medium`}
+            className={`${styles.inputField} w-full py-3 px-4 ${prefix ? 'pl-8' : ''} ${suffix ? 'pr-8' : ''} border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 text-sm font-medium`}
           />
           {suffix && (
-            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium z-10">
               {suffix}
             </span>
           )}
         </div>
+
+        {showSlider && (
+          <div className="space-y-2">
+            <input
+              type="range"
+              min={getSliderMin()}
+              max={getSliderMax()}
+              step={getSliderStep()}
+              value={Math.max(getSliderMin(), Math.min(getSliderMax(), value))}
+              onChange={handleSliderChange}
+              className={`${styles.slider} w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer`}
+              style={{
+                background: `linear-gradient(to right, 
+                  rgb(59 130 246) 0%, 
+                  rgb(59 130 246) ${((Math.max(getSliderMin(), Math.min(getSliderMax(), value)) - getSliderMin()) / (getSliderMax() - getSliderMin())) * 100}%, 
+                  #E5E7EB ${((Math.max(getSliderMin(), Math.min(getSliderMax(), value)) - getSliderMin()) / (getSliderMax() - getSliderMin())) * 100}%, 
+                  #E5E7EB 100%)`
+              }}
+            />
+            <div className="flex justify-between text-xs text-gray-500">
+              <span className="bg-gray-100 px-2 py-1 rounded">{prefix}{formatNumber(getSliderMin())}{suffix}</span>
+              <span className="bg-gray-100 px-2 py-1 rounded">{prefix}{formatNumber(getSliderMax())}{suffix}</span>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-green-700 p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <Calculator className="w-6 h-6" />
+    <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-card border border-white/20 overflow-hidden hover:shadow-card-hover transition-all duration-300">
+      {/* Enhanced Header with modern gradient */}
+      <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 p-8 text-white relative overflow-hidden">
+        {/* Background pattern */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-16 translate-x-16"></div>
+        
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30">
+              <Calculator className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold">Robinhood Margin Calculator</h3>
-              <p className="text-green-100 text-sm">Real-time margin rates for {symbol} • Rates as of Dec 2024</p>
+              <h3 className="text-3xl font-bold mb-1">Margin Calculator</h3>
+              <p className="text-blue-100 text-sm font-medium">
+                Real-time rates for <span className="font-bold text-white">{symbol}</span> • Updated Dec 2024
+              </p>
+              <div className="flex items-center space-x-2 mt-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-xs text-blue-100">Live market data</span>
+              </div>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-green-100">Current Price</div>
-            <div className="text-2xl font-bold">{formatCurrency(stockPrice)}</div>
+            <div className="text-sm text-blue-100 mb-1">Current Stock Price</div>
+            <div className="text-3xl font-bold mb-1">{formatCurrency(stockPrice)}</div>
+            <div className="inline-flex items-center px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full border border-white/30">
+              <span className="text-xs font-medium">Live Quote</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Presets */}
-      <div className="p-6 bg-gray-50 border-b">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="font-semibold text-gray-800">Quick Scenarios</h4>
-          <div className="text-xs text-gray-500">Click to apply preset</div>
+      {/* Enhanced Quick Presets */}
+      <div className="p-8 bg-gradient-to-r from-gray-50/80 to-blue-50/80 backdrop-blur-sm border-b border-gray-200/50">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h4 className="text-xl font-bold text-gray-800 mb-1">Quick Scenarios</h4>
+            <p className="text-sm text-gray-600">Choose a preset trading strategy to get started</p>
+          </div>
+          <div className="text-xs text-gray-500 bg-white/60 px-3 py-1 rounded-full">
+            Click to apply preset
+          </div>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
             onClick={() => applyPreset('conservative')}
-            className={`${styles.presetButton} p-3 bg-green-50 border-2 border-green-200 rounded-xl hover:bg-green-100 transition-colors duration-200 group`}
+            className={`${styles.presetButton} p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl hover:border-green-300 transition-all duration-300 group hover:scale-105`}
           >
-            <Shield className="w-5 h-5 text-green-600 mx-auto mb-1" />
-            <div className="text-sm font-semibold text-green-700">Conservative</div>
-            <div className="text-xs text-green-600">25% margin, 5% target</div>
+            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-green-200 transition-colors">
+              <Shield className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="text-lg font-bold text-green-800 mb-1">Conservative</div>
+            <div className="text-sm text-green-600 mb-2">Low risk, steady returns</div>
+            <div className="text-xs text-green-500 bg-green-100 px-2 py-1 rounded-full">
+              25% margin • 5% target
+            </div>
           </button>
           <button
             onClick={() => applyPreset('moderate')}
-            className={`${styles.presetButton} p-3 bg-blue-50 border-2 border-blue-200 rounded-xl hover:bg-blue-100 transition-colors duration-200 group`}
+            className={`${styles.presetButton} p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl hover:border-blue-300 transition-all duration-300 group hover:scale-105`}
           >
-            <Target className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-            <div className="text-sm font-semibold text-blue-700">Moderate</div>
-            <div className="text-xs text-blue-600">50% margin, 10% target</div>
+            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-200 transition-colors">
+              <Target className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="text-lg font-bold text-blue-800 mb-1">Moderate</div>
+            <div className="text-sm text-blue-600 mb-2">Balanced risk & reward</div>
+            <div className="text-xs text-blue-500 bg-blue-100 px-2 py-1 rounded-full">
+              50% margin • 10% target
+            </div>
           </button>
           <button
             onClick={() => applyPreset('aggressive')}
-            className={`${styles.presetButton} p-3 bg-red-50 border-2 border-red-200 rounded-xl hover:bg-red-100 transition-colors duration-200 group`}
+            className={`${styles.presetButton} p-6 bg-gradient-to-br from-red-50 to-pink-50 border-2 border-red-200 rounded-2xl hover:border-red-300 transition-all duration-300 group hover:scale-105`}
           >
-            <TrendingUp className="w-5 h-5 text-red-600 mx-auto mb-1" />
-            <div className="text-sm font-semibold text-red-700">Aggressive</div>
-            <div className="text-xs text-red-600">100% margin, 20% target</div>
+            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-red-200 transition-colors">
+              <TrendingUp className="w-6 h-6 text-red-600" />
+            </div>
+            <div className="text-lg font-bold text-red-800 mb-1">Aggressive</div>
+            <div className="text-sm text-red-600 mb-2">High risk, high reward</div>
+            <div className="text-xs text-red-500 bg-red-100 px-2 py-1 rounded-full">
+              100% margin • 20% target
+            </div>
           </button>
         </div>
       </div>
@@ -376,6 +511,9 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
               prefix="$"
               tooltip="Total amount you want to invest including margin"
               min={1000}
+              max={100000}
+              showSlider={true}
+              sliderStep={500}
             />
             
             <div className="space-y-3">
@@ -407,6 +545,9 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
               prefix="$"
               step="0.01"
               tooltip="Price at which you plan to buy"
+              min={0.01}
+              showSlider={true}
+              sliderStep={0.01}
             />
 
             <InputField
@@ -416,6 +557,9 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
               prefix="$"
               step="0.01"
               tooltip="Your target sell price"
+              min={0.01}
+              showSlider={true}
+              sliderStep={0.01}
             />
 
             <InputField
@@ -425,6 +569,9 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
               prefix="$"
               step="0.01"
               tooltip="Price at which you'll cut losses"
+              min={0.01}
+              showSlider={true}
+              sliderStep={0.01}
             />
 
             <InputField
@@ -435,6 +582,8 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
               tooltip="How long you plan to hold the position"
               min={1}
               max={365}
+              showSlider={true}
+              sliderStep={1}
             />
 
             {/* Robinhood Gold Toggle */}
@@ -549,7 +698,7 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
                   <div className="flex justify-between items-center">
                     <span className="text-green-700">Return on Investment:</span>
                     <span className="text-xl font-bold text-green-800">
-                      {calc.exitScenario.roi.toFixed(2)}%
+                      {formatROI(calc.exitScenario.roi)}%
                     </span>
                   </div>
                   <div className="text-xs text-green-600 bg-green-100 p-2 rounded-lg">
@@ -580,7 +729,7 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
                   <div className="flex justify-between items-center">
                     <span className="text-red-700">Loss Percentage:</span>
                     <span className="text-xl font-bold text-red-800">
-                      {calc.stopLossScenario.roi.toFixed(2)}%
+                      {formatROI(calc.stopLossScenario.roi)}%
                     </span>
                   </div>
                   <div className="text-xs text-red-600 bg-red-100 p-2 rounded-lg">

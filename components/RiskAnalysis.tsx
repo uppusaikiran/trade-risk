@@ -41,7 +41,7 @@ export default function RiskAnalysis({
       const price = priceRange.min + (priceRange.max - priceRange.min) * (i / 20);
       const grossPnL = (price - entryPrice) * shares;
       const netPnL = grossPnL - marginInterest;
-      const roi = (netPnL / ownCash) * 100;
+      const roi = ownCash > 0 ? (netPnL / ownCash) * 100 : 0;
       
       // Check for margin call (assuming 25% maintenance margin)
       const portfolioValue = price * shares;
@@ -63,7 +63,7 @@ export default function RiskAnalysis({
   
   // Calculate key metrics
   const currentPnL = (stockPrice - entryPrice) * shares - marginInterest;
-  const currentROI = (currentPnL / ownCash) * 100;
+  const currentROI = ownCash > 0 ? (currentPnL / ownCash) * 100 : 0;
   
   const stopLossPrice = entryPrice * (1 - riskTolerance.stopLossPercentage / 100);
   const takeProfitPrice = entryPrice * (1 + riskTolerance.takeProfitPercentage / 100);
@@ -80,6 +80,16 @@ export default function RiskAnalysis({
     }).format(amount);
   };
 
+  const formatROI = (roi: number) => {
+    if (!isFinite(roi) || isNaN(roi)) {
+      return '∞'; // Use infinity symbol instead of "Infinity%"
+    }
+    if (Math.abs(roi) > 9999) {
+      return roi > 0 ? '∞' : '-∞';
+    }
+    return roi.toFixed(2);
+  };
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -90,7 +100,7 @@ export default function RiskAnalysis({
             P&L: <span className="font-semibold">{formatCurrency(data.profit)}</span>
           </p>
           <p className={`${data.roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            ROI: <span className="font-semibold">{data.roi.toFixed(1)}%</span>
+            ROI: <span className="font-semibold">{formatROI(data.roi)}%</span>
           </p>
           {data.marginCall && (
             <p className="text-red-600 font-semibold">⚠️ Margin Call</p>
@@ -188,7 +198,7 @@ export default function RiskAnalysis({
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Current ROI:</span>
                 <span className={`font-semibold ${currentROI >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {currentROI.toFixed(2)}%
+                  {formatROI(currentROI)}%
                 </span>
               </div>
             </div>

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import yahooFinance from 'yahoo-finance2';
 
+// Suppress the historical deprecation notice since we've migrated to chart()
+yahooFinance.suppressNotices(['ripHistorical']);
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -27,13 +30,16 @@ export async function GET(request: NextRequest) {
 
       const yahooApiPeriod = periodMap[period] || '1y';
 
-      const historicalData = await yahooFinance.historical(symbol, {
+      const chartData = await yahooFinance.chart(symbol, {
         period1: getStartDate(period),
         period2: new Date(),
         interval: '1d'
       });
 
-      const formattedData = historicalData.map((item: any) => ({
+      // Extract the quotes data from the chart response
+      const quotes = chartData.quotes || [];
+      
+      const formattedData = quotes.map((item: any) => ({
         date: item.date.toISOString().split('T')[0],
         open: item.open,
         high: item.high,
