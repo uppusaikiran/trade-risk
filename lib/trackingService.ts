@@ -294,7 +294,15 @@ export class TrackingService {
     // Check for risk alerts
     const newAlerts = this.checkForRiskAlerts(updatedEntry);
     const existingAlerts = entry.riskAlerts || [];
-    const allAlerts = [...existingAlerts, ...newAlerts];
+    
+    // Only add new alerts if there isn't already an unacknowledged alert of the same type
+    const filteredNewAlerts = newAlerts.filter(newAlert => {
+      return !existingAlerts.some(existingAlert => 
+        existingAlert.type === newAlert.type && !existingAlert.acknowledged
+      );
+    });
+    
+    const allAlerts = [...existingAlerts, ...filteredNewAlerts];
     
     return {
       currentPrice,

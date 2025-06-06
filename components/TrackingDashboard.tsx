@@ -25,6 +25,7 @@ import { TrackingEntry, RiskAlert } from '@/types/stock';
 import { TrackingService } from '@/lib/trackingService';
 import { useNotifications } from './NotificationProvider';
 import { ConfirmationDialog } from './ConfirmationDialog';
+import { alertEngine } from '@/lib/alertEngine';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-US', {
@@ -163,12 +164,14 @@ const TrackingCard = ({
   entry, 
   onRemove, 
   onRefresh,
-  onRenew
+  onRenew,
+  onDataUpdate
 }: { 
   entry: TrackingEntry; 
   onRemove: (id: string) => void;
   onRefresh: (id: string) => void;
   onRenew: (id: string) => void;
+  onDataUpdate: () => void;
 }) => {
   const profitColor = (entry.currentProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600';
   const roiColor = (entry.currentROI || 0) >= 0 ? 'text-green-600' : 'text-red-600';
@@ -185,9 +188,14 @@ const TrackingCard = ({
   // Filter unacknowledged risk alerts
   const activeAlerts = (entry.riskAlerts || []).filter(alert => !alert.acknowledged);
 
+  // Check active alerts from alert engine
+  const engineAlerts = alertEngine.getTriggeredAlerts()
+    .filter(alert => !alert.acknowledgedAt && alert.symbol === entry.symbol && alert.status === 'triggered');
+  const hasActiveEngineAlerts = engineAlerts.length > 0;
+
   const handleAcknowledgeAlert = (alertId: string) => {
     TrackingService.acknowledgeRiskAlert(entry.id, alertId);
-    // You might want to refresh the data here or use a callback
+    onDataUpdate(); // Refresh the data after acknowledging the alert
   };
 
   return (
@@ -205,6 +213,12 @@ const TrackingCard = ({
         </div>
         <div className="flex items-center space-x-2">
           <StatusBadge status={entry.status} />
+          {hasActiveEngineAlerts && (
+            <div className="flex items-center space-x-1 bg-red-50 border border-red-200 px-2 py-1 rounded-full">
+              <Bell className="w-3 h-3 text-red-600" />
+              <span className="text-xs text-red-700 font-medium">{engineAlerts.length}</span>
+            </div>
+          )}
           {entry.status === 'expired' && (
             <button
               onClick={() => onRenew(entry.id)}
@@ -245,6 +259,50 @@ const TrackingCard = ({
               onAcknowledge={handleAcknowledgeAlert}
             />
           ))}
+        </div>
+      )}
+
+      {/* Trading Alerts from Alert Engine */}
+      {hasActiveEngineAlerts && (
+        <div className="mb-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <BellOff className="w-4 h-4 text-orange-500" />
+            <span className="text-sm font-medium text-orange-700">Trading Alerts ({engineAlerts.length})</span>
+            <a
+              href="/alerts"
+              className="text-xs text-blue-600 hover:text-blue-800 underline"
+            >
+              Manage
+            </a>
+          </div>
+          {engineAlerts.slice(0, 2).map(alert => (
+            <div key={alert.id} className="p-3 rounded-lg border bg-orange-50 border-orange-200 text-orange-800 mb-2">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium">{alert.title}</p>
+                  <p className="text-xs opacity-75 mt-1">{alert.message}</p>
+                  <p className="text-xs opacity-75 mt-1">
+                    {new Date(alert.triggeredAt).toLocaleString()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    alertEngine.acknowledgeAlert(alert.id);
+                    onDataUpdate();
+                  }}
+                  className="p-1 hover:bg-white/50 rounded"
+                  title="Acknowledge alert"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          ))}
+          {engineAlerts.length > 2 && (
+            <p className="text-xs text-gray-500">
+              +{engineAlerts.length - 2} more alerts. <a href="/alerts" className="text-blue-600 hover:underline">View all</a>
+            </p>
+          )}
         </div>
       )}
 
@@ -594,6 +652,7 @@ export default function TrackingDashboard() {
                 onRemove={handleRemoveEntry}
                 onRefresh={handleRefreshEntry}
                 onRenew={handleRenewEntry}
+                onDataUpdate={loadTrackingEntries}
               />
             ))}
           </div>
@@ -615,6 +674,7 @@ export default function TrackingDashboard() {
                 onRemove={handleRemoveEntry}
                 onRefresh={handleRefreshEntry}
                 onRenew={handleRenewEntry}
+                onDataUpdate={loadTrackingEntries}
               />
             ))}
           </div>
@@ -635,6 +695,7 @@ export default function TrackingDashboard() {
                 onRemove={handleRemoveEntry}
                 onRefresh={handleRefreshEntry}
                 onRenew={handleRenewEntry}
+                onDataUpdate={loadTrackingEntries}
               />
             ))}
           </div>

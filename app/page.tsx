@@ -1,15 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { TrendingUp, Zap, Sparkles, Shield, Target, Calculator } from 'lucide-react';
+import { TrendingUp, Zap, Sparkles, Shield, Target, Calculator, Bell, AlertTriangle } from 'lucide-react';
 import StockSearch from '@/components/StockSearch';
 import StockInfo from '@/components/StockInfo';
 import MarginCalculator from '@/components/MarginCalculator';
 import StockChart from '@/components/StockChart';
 import RiskAnalysis from '@/components/RiskAnalysis';
 import TrackingDashboard from '@/components/TrackingDashboard';
+import AlertSummaryWidget from '../components/AlertSummaryWidget';
+import FloatingAlertNotifications from '../components/FloatingAlertNotifications';
+import Footer from '../components/Footer';
+import Navigation from '../components/Navigation';
 import { StockAPI } from '@/lib/stockApi';
 import { StockQuote } from '@/types/stock';
+import { alertEngine } from '@/lib/alertEngine';
+import { TriggeredAlert } from '@/types/alerts';
 
 export default function Home() {
   const [selectedStock, setSelectedStock] = useState<string>('');
@@ -17,6 +23,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'calculator' | 'tracking'>('calculator');
+  const [recentAlerts, setRecentAlerts] = useState<TriggeredAlert[]>([]);
   
   // Calculator state for passing to other components
   const [calculatorData, setCalculatorData] = useState({
@@ -29,6 +36,20 @@ export default function Home() {
     tradeDuration: 30,
     marginInterest: 0
   });
+
+  // Load recent alerts
+  useEffect(() => {
+    const loadAlerts = () => {
+      const alerts = alertEngine.getTriggeredAlerts()
+        .filter(alert => alert.status === 'triggered')
+        .slice(0, 3); // Show only 3 most recent
+      setRecentAlerts(alerts);
+    };
+
+    loadAlerts();
+    const interval = setInterval(loadAlerts, 10000); // Update every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   const handleStockSelect = async (symbol: string) => {
     setSelectedStock(symbol);
@@ -48,29 +69,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      {/* Enhanced Header with gradient background */}
-      <header className="glass-effect shadow-lg border-b border-white/20 sticky top-0 z-50 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <div className="relative">
-                <TrendingUp className="w-8 h-8 text-blue-600 mr-3" />
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full opacity-20 blur"></div>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gradient">TradeRisk Pro</h1>
-                <span className="text-xs text-gray-500 font-medium tracking-wide">MARGIN TRADING CALCULATOR</span>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2 bg-gradient-to-r from-yellow-400/10 to-orange-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
-                <Zap className="w-4 h-4 text-yellow-500" />
-                <span className="text-sm text-gray-700 font-medium">Powered by Robinhood Gold</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Navigation */}
+      <Navigation currentPage="home" />
 
       {/* Hero Section with enhanced design */}
       <section className="relative overflow-hidden py-16">
@@ -100,6 +100,16 @@ export default function Home() {
               <StockSearch onSelectStock={handleStockSelect} />
             </div>
           </div>
+
+          {/* Alert Summary Widget - Show if there are active alerts */}
+          {recentAlerts.length > 0 && (
+            <div className="mb-8">
+              <AlertSummaryWidget 
+                alerts={recentAlerts} 
+                className="max-w-4xl mx-auto"
+              />
+            </div>
+          )}
 
           {/* Feature highlights */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
@@ -365,28 +375,14 @@ export default function Home() {
       </main>
 
       {/* Enhanced Footer */}
-      <footer className="bg-white/60 backdrop-blur-sm border-t border-gray-200 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-6 border border-yellow-200">
-              <p className="text-gray-700 text-sm leading-relaxed">
-                <span className="inline-flex items-center text-yellow-600 font-bold mr-2">
-                  ⚠️ Disclaimer:
-                </span>
-                This tool is for educational purposes only. 
-                Trading involves substantial risk and may not be suitable for all investors. 
-                Past performance does not guarantee future results. Always consult with a financial advisor.
-              </p>
-            </div>
-            
-            <div className="mt-6 text-center">
-              <p className="text-gray-500 text-xs">
-                © 2024 TradeRisk Pro. Built with modern web technologies for optimal performance.
-              </p>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
+
+      {/* Floating Alert Notifications */}
+      <FloatingAlertNotifications 
+        maxVisible={3}
+        autoHideDuration={15}
+        position="bottom-right"
+      />
     </div>
   );
 } 
