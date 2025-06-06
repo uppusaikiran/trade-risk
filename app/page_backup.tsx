@@ -229,166 +229,138 @@ export default function Home() {
                     marginInterest={calculatorData.marginInterest}
                   />
                 )}
+
+                {/* Enhanced Educational Content */}
+                <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-3xl p-8 border border-blue-100 shadow-card">
+                  <div className="text-center mb-8">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Understanding Margin Trading</h3>
+                    <p className="text-gray-600">Essential knowledge for successful margin trading</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                      <h4 className="font-bold text-gray-800 mb-3 flex items-center">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                        What is Margin Trading?
+                      </h4>
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        Margin trading allows you to borrow money from your broker to purchase stocks. 
+                        With Robinhood Gold, you can access instant deposits and margin trading with competitive rates.
+                      </p>
+                    </div>
+                    
+                    <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                      <h4 className="font-bold text-gray-800 mb-3 flex items-center">
+                        <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                        Key Risks
+                      </h4>
+                      <ul className="text-gray-600 text-sm space-y-2">
+                        <li className="flex items-start">
+                          <span className="text-red-400 mr-2">•</span>
+                          Amplified losses on declining positions
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-red-400 mr-2">•</span>
+                          Margin call requirements
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-red-400 mr-2">•</span>
+                          Interest charges on borrowed funds
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-red-400 mr-2">•</span>
+                          Forced liquidation in extreme cases
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                      <h4 className="font-bold text-gray-800 mb-3 flex items-center">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                        Best Practices
+                      </h4>
+                      <ul className="text-gray-600 text-sm space-y-2">
+                        <li className="flex items-start">
+                          <span className="text-green-400 mr-2">•</span>
+                          Set clear stop-loss levels
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-green-400 mr-2">•</span>
+                          Monitor positions regularly
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-green-400 mr-2">•</span>
+                          Never risk more than you can afford
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-green-400 mr-2">•</span>
+                          Understand margin requirements
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                      <h4 className="font-bold text-gray-800 mb-3 flex items-center">
+                        <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                        Robinhood Gold Features
+                      </h4>
+                      <ul className="text-gray-600 text-sm space-y-2">
+                        <li className="flex items-start">
+                          <span className="text-yellow-400 mr-2">•</span>
+                          2.5% - 7.5% margin interest rates
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-yellow-400 mr-2">•</span>
+                          Instant deposits up to $50,000
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-yellow-400 mr-2">•</span>
+                          Professional research and data
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-yellow-400 mr-2">•</span>
+                          Level II market data
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Enhanced Getting Started */}
+            {!stockData && !isLoading && !error && (
+              <div className="text-center py-16">
+                <div className="max-w-lg mx-auto">
+                  <div className="relative mb-8">
+                    <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto shadow-glow">
+                      <TrendingUp className="w-12 h-12 text-white" />
+                    </div>
+                    <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl opacity-20 blur-xl"></div>
+                  </div>
+                  
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                    Start Your Analysis
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed mb-6">
+                    Search for a stock symbol above to begin calculating your margin trading strategy 
+                    and comprehensive risk assessment with real-time market data.
+                  </p>
+                  
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium text-blue-600">Pro tip:</span> Try popular symbols like AAPL, TSLA, NVDA, or MSFT
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
           </>
         )}
 
-            {/* Enhanced Educational Content */}
-            {(!stockData && !isLoading && !error) && (
-              <>
-                {/* Enhanced Getting Started */}
-                <div className="text-center py-16">
-                  <div className="max-w-lg mx-auto">
-                    <div className="relative mb-8">
-                      <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto shadow-glow">
-                        <TrendingUp className="w-12 h-12 text-white" />
-                      </div>
-                      <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl opacity-20 blur-xl"></div>
-                    </div>
-                    
-                    <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                      Start Your Analysis
-                    </h3>
-                    <p className="text-gray-600 leading-relaxed mb-6">
-                      Search for a stock symbol above to begin calculating your margin trading strategy 
-                      and comprehensive risk assessment with real-time market data.
-                    </p>
-                    
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium text-blue-600">Pro tip:</span> Try popular symbols like AAPL, TSLA, NVDA, or MSFT
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Enhanced Educational Content */}
-            <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-3xl p-8 border border-blue-100 shadow-card">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Understanding Margin Trading</h3>
-                <p className="text-gray-600">Essential knowledge for successful margin trading</p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                  <h4 className="font-bold text-gray-800 mb-3 flex items-center">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                    What is Margin Trading?
-                  </h4>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    Margin trading allows you to borrow money from your broker to purchase stocks. 
-                    With Robinhood Gold, you can access instant deposits and margin trading with competitive rates.
-                  </p>
-                </div>
-                
-                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                  <h4 className="font-bold text-gray-800 mb-3 flex items-center">
-                    <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                    Key Risks
-                  </h4>
-                  <ul className="text-gray-600 text-sm space-y-2">
-                    <li className="flex items-start">
-                      <span className="text-red-400 mr-2">•</span>
-                      Amplified losses on declining positions
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-red-400 mr-2">•</span>
-                      Margin call requirements
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-red-400 mr-2">•</span>
-                      Interest charges on borrowed funds
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-red-400 mr-2">•</span>
-                      Forced liquidation in extreme cases
-                    </li>
-                  </ul>
-                </div>
-                
-                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                  <h4 className="font-bold text-gray-800 mb-3 flex items-center">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                    Best Practices
-                  </h4>
-                  <ul className="text-gray-600 text-sm space-y-2">
-                    <li className="flex items-start">
-                      <span className="text-green-400 mr-2">•</span>
-                      Set clear stop-loss levels
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-green-400 mr-2">•</span>
-                      Monitor positions regularly
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-green-400 mr-2">•</span>
-                      Never risk more than you can afford
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-green-400 mr-2">•</span>
-                      Understand margin requirements
-                    </li>
-                  </ul>
-                </div>
-                
-                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                  <h4 className="font-bold text-gray-800 mb-3 flex items-center">
-                    <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
-                    Robinhood Gold Features
-                  </h4>
-                  <ul className="text-gray-600 text-sm space-y-2">
-                    <li className="flex items-start">
-                      <span className="text-yellow-400 mr-2">•</span>
-                      2.5% - 7.5% margin interest rates
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-yellow-400 mr-2">•</span>
-                      Instant deposits up to $50,000
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-yellow-400 mr-2">•</span>
-                      Professional research and data
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-yellow-400 mr-2">•</span>
-                      Level II market data
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Enhanced Getting Started */}
-        {!stockData && !isLoading && !error && (
-          <div className="text-center py-16">
-            <div className="max-w-lg mx-auto">
-              <div className="relative mb-8">
-                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto shadow-glow">
-                  <TrendingUp className="w-12 h-12 text-white" />
-                </div>
-                <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl opacity-20 blur-xl"></div>
-              </div>
-              
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                Start Your Analysis
-              </h3>
-              <p className="text-gray-600 leading-relaxed mb-6">
-                Search for a stock symbol above to begin calculating your margin trading strategy 
-                and comprehensive risk assessment with real-time market data.
-              </p>
-              
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium text-blue-600">Pro tip:</span> Try popular symbols like AAPL, TSLA, NVDA, or MSFT
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* Tracking Tab Content */}
+        {activeTab === 'tracking' && (
+          <TrackingDashboard />
         )}
       </main>
 
