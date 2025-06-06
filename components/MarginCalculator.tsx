@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Calculator, AlertTriangle, Info, TrendingUp, TrendingDown, DollarSign, Percent, Calendar, Target, Shield, Star } from 'lucide-react';
+import { Calculator, AlertTriangle, Info, TrendingUp, TrendingDown, DollarSign, Percent, Calendar, Target, Shield, Star, Plus } from 'lucide-react';
 import styles from './MarginCalculator.module.css';
+import { TrackingService } from '@/lib/trackingService';
+import { useNotifications } from './NotificationProvider';
 
 interface MarginCalculatorProps {
   stockPrice: number;
   symbol: string;
+  stockName?: string;
 }
 
 const formatCurrency = (amount: number) => {
@@ -107,7 +110,7 @@ const getRobinhoodMarginRate = (marginAmount: number): number => {
   return 4.7;
 };
 
-export default function MarginCalculator({ stockPrice, symbol }: MarginCalculatorProps) {
+export default function MarginCalculator({ stockPrice, symbol, stockName }: MarginCalculatorProps) {
   const [investmentAmount, setInvestmentAmount] = useState<number>(10000);
   const [marginRatio, setMarginRatio] = useState<number>(100); // Default to 100% margin
   const [tradeDuration, setTradeDuration] = useState<number>(30);
@@ -115,6 +118,9 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
   const [exitPrice, setExitPrice] = useState<number>(stockPrice * 1.1);
   const [stopLoss, setStopLoss] = useState<number>(stockPrice * 0.95);
   const [isGoldSubscriber, setIsGoldSubscriber] = useState<boolean>(false);
+  const [isTracking, setIsTracking] = useState<boolean>(false);
+
+  const { addNotification } = useNotifications();
 
   // Update entry price when stock price changes
   useEffect(() => {
@@ -155,8 +161,8 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
       roi: actualOwnCash > 0 ? ((stopLoss - entryPrice) * shares - totalInterest) / actualOwnCash * 100 : 0
     };
 
-    const marginCallPrice = (actualMarginUsed * 1.25) / shares;
-    const isMarginCallRisk = marginCallPrice > stopLoss;
+    const marginCallPrice = shares > 0 ? (actualMarginUsed * 1.25) / shares : 0;
+    const isMarginCallRisk = shares > 0 && marginCallPrice > stopLoss;
 
     return {
       shares,
@@ -175,6 +181,45 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
   }, [investmentAmount, marginRatio, entryPrice, exitPrice, stopLoss, tradeDuration, isGoldSubscriber]);
 
   const calc = calculations();
+
+  // Track function
+  const handleTrack = async () => {
+    setIsTracking(true);
+    try {
+      TrackingService.addTrackingEntry({
+        symbol,
+        stockName: stockName || symbol,
+        entryPrice,
+        exitPrice,
+        stopLoss,
+        shares: calc.shares,
+        investmentAmount: calc.actualInvestment,
+        marginUsed: calc.actualMarginUsed,
+        ownCash: calc.actualOwnCash,
+        marginRatio,
+        tradeDuration,
+        isGoldSubscriber,
+      });
+      
+      // Show success notification
+      addNotification({
+        type: 'success',
+        title: 'Tracking Started!',
+        message: `Started tracking ${symbol}. Visit the Portfolio Tracking tab to monitor daily performance.`,
+        duration: 5000,
+      });
+    } catch (error) {
+      console.error('Error adding tracking entry:', error);
+      addNotification({
+        type: 'error',
+        title: 'Tracking Failed',
+        message: 'Failed to start tracking. Please try again.',
+        duration: 5000,
+      });
+    } finally {
+      setIsTracking(false);
+    }
+  };
 
   // Preset scenarios
   const applyPreset = (preset: 'conservative' | 'moderate' | 'aggressive') => {
@@ -738,6 +783,27 @@ export default function MarginCalculator({ stockPrice, symbol }: MarginCalculato
                 </div>
               </div>
             </div>
+
+            {/* Track Button */}
+            {calc.shares > 0 && (
+              <div className="mb-6">
+                <button
+                  onClick={handleTrack}
+                  disabled={isTracking}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-4 px-6 rounded-2xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  <div className="flex items-center justify-center space-x-3">
+                    <Plus className={`w-5 h-5 ${isTracking ? 'animate-spin' : ''}`} />
+                    <span className="text-lg">
+                      {isTracking ? 'Starting Tracking...' : 'Start Paper Trade Tracking'}
+                    </span>
+                  </div>
+                  <p className="text-sm opacity-90 mt-1">
+                    Monitor daily profit/loss and risk metrics automatically
+                  </p>
+                </button>
+              </div>
+            )}
 
             {/* Risk Warning */}
             {calc.isMarginCallRisk && (

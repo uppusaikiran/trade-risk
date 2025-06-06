@@ -48,4 +48,50 @@ export interface TradeScenario {
   profit: number;
   loss: number;
   marginCall: boolean;
+}
+
+export interface DailyUpdate {
+  date: string;
+  price: number;
+  profit: number;
+  loss: number;
+  totalInterest: number;
+  roi: number;
+  marginCallRisk: boolean;
+}
+
+export interface RiskAlert {
+  id: string;
+  type: 'sudden_loss' | 'high_volatility' | 'margin_risk' | 'profit_decline';
+  severity: 'low' | 'medium' | 'high';
+  message: string;
+  timestamp: string;
+  acknowledged: boolean;
+}
+
+export interface TrackingEntry {
+  id: string;
+  symbol: string;
+  stockName: string;
+  entryDate: string;
+  entryPrice: number;
+  exitPrice: number;
+  stopLoss: number;
+  shares: number;
+  investmentAmount: number;
+  marginUsed: number;
+  ownCash: number;
+  marginRatio: number;
+  tradeDuration: number;
+  isGoldSubscriber: boolean;
+  status: 'active' | 'completed' | 'stopped' | 'expired';
+  dailyUpdates: DailyUpdate[];
+  currentPrice?: number;
+  currentProfit?: number;
+  currentROI?: number;
+  daysElapsed?: number;
+  totalInterestPaid?: number;
+  expirationDate?: string;
+  riskAlerts?: RiskAlert[];
+  lastRiskCheck?: string;
 } 
